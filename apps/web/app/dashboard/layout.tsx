@@ -9,25 +9,49 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen">
-      <aside className="w-64 border-r p-6">
-        <h2 className="text-xl font-bold mb-6">EdgeLink</h2>
+    <div className="flex min-h-screen bg-gray-50">
+      <aside className="w-64 border-r bg-white p-6">
+        <h2 className="text-xl font-bold mb-8">EdgeLink</h2>
 
-        <nav className="flex flex-col gap-4">
-          <Link href="/dashboard">Dashboard</Link>
-          <Link href="/dashboard/new">Create Link</Link>
-          <Link href="/dashboard/links">My Links</Link>
-          <Link href="/dashboard/analytics">Analytics</Link>
+        <nav className="flex flex-col gap-3 text-sm">
+          <Link
+            href="/dashboard"
+            className="hover:bg-gray-100 px-3 py-2 rounded"
+          >
+            Dashboard
+          </Link>
+
+          <Link
+            href="/dashboard/new"
+            className="hover:bg-gray-100 px-3 py-2 rounded"
+          >
+            Create Link
+          </Link>
+
+          <Link
+            href="/dashboard/links"
+            className="hover:bg-gray-100 px-3 py-2 rounded"
+          >
+            My Links
+          </Link>
+
+          <Link
+            href="/dashboard/analytics"
+            className="hover:bg-gray-100 px-3 py-2 rounded"
+          >
+            Analytics
+          </Link>
         </nav>
       </aside>
 
-      <div className="flex-1">
-        <header className="flex justify-between items-center border-b p-4">
-          <h1 className="font-semibold">Dashboard</h1>
+      <div className="flex-1 flex flex-col">
+        <header className="flex justify-between items-center border-b bg-white px-6 py-4">
+          <h1 className="font-semibold text-lg">Dashboard</h1>
+
           <UserButton />
         </header>
 
-        <main className="p-6">{children}</main>
+        <main className="p-8 max-w-7xl mx-auto w-full">{children}</main>
       </div>
     </div>
   );

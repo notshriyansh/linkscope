@@ -52,9 +52,14 @@ function detectDevice(userAgent: string): string {
   return "desktop";
 }
 
+app.get("/", (c) => {
+  return c.json({
+    message: "EdgeLink API running",
+  });
+});
+
 app.post("/links", async (c) => {
   const payload = await verifyClerkToken(c.req.raw, c.env.CLERK_SECRET_KEY);
-
   const userId = payload.sub;
 
   const body = await c.req.json();
@@ -72,8 +77,10 @@ app.post("/links", async (c) => {
     : null;
 
   await c.env.DB.prepare(
-    `INSERT INTO links (id, user_id, short_code, original_url, expires_at, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `
+    INSERT INTO links (id, user_id, short_code, original_url, expires_at, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `,
   )
     .bind(crypto.randomUUID(), userId, shortCode, originalUrl, expiresAt, now)
     .run();
@@ -84,11 +91,55 @@ app.post("/links", async (c) => {
   });
 });
 
+app.get("/links", async (c) => {
+  const payload = await verifyClerkToken(c.req.raw, c.env.CLERK_SECRET_KEY);
+  const userId = payload.sub;
+
+  const result = await c.env.DB.prepare(
+    `
+    SELECT id, short_code, original_url, created_at
+    FROM links
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+  `,
+  )
+    .bind(userId)
+    .all();
+
+  return c.json({
+    links: result.results,
+  });
+});
+
+app.get("/analytics/:linkId", async (c) => {
+  const payload = await verifyClerkToken(c.req.raw, c.env.CLERK_SECRET_KEY);
+  const userId = payload.sub;
+
+  const linkId = c.req.param("linkId");
+
+  const result = await c.env.DB.prepare(
+    `
+    SELECT country, device, created_at
+    FROM clicks
+    WHERE link_id = ?
+  `,
+  )
+    .bind(linkId)
+    .all();
+
+  return c.json({
+    clicks: result.results,
+  });
+});
+
 app.get("/:shortCode", async (c) => {
   const { shortCode } = c.req.param();
 
   const link = await c.env.DB.prepare(
-    `SELECT * FROM links WHERE short_code = ?`,
+    `
+    SELECT * FROM links
+    WHERE short_code = ?
+  `,
   )
     .bind(shortCode)
     .first<LinkRow>();
@@ -121,6 +172,30 @@ app.get("/:shortCode", async (c) => {
   });
 
   return c.redirect(link.original_url, 302);
+});
+
+app.get("/stats", async (c) => {
+  const totalLinks = await c.env.DB.prepare(
+    `SELECT COUNT(*) as count FROM links`,
+  ).first();
+
+  const totalClicks = await c.env.DB.prepare(
+    `SELECT COUNT(*) as count FROM clicks`,
+  ).first();
+
+  const today = new Date().setHours(0, 0, 0, 0);
+
+  const clicksToday = await c.env.DB.prepare(
+    `SELECT COUNT(*) as count FROM clicks WHERE created_at > ?`,
+  )
+    .bind(today)
+    .first();
+
+  return c.json({
+    totalLinks: totalLinks?.count || 0,
+    totalClicks: totalClicks?.count || 0,
+    clicksToday: clicksToday?.count || 0,
+  });
 });
 
 export default app;

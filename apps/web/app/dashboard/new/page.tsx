@@ -53,39 +53,48 @@ export default function NewLinkPage() {
   }
 
   return (
-    <div className="max-w-xl space-y-4">
-      <h2 className="text-xl font-semibold">Create Short Link</h2>
+    <div className="max-w-xl space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold">Create Short Link</h2>
+        <p className="text-sm text-gray-500">
+          Generate a new short URL instantly
+        </p>
+      </div>
 
-      <Input
-        placeholder="Paste your URL"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-      />
+      <div className="space-y-4">
+        <Input
+          placeholder="https://example.com/very-long-url"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+        />
 
-      <Button onClick={createLink} disabled={loading}>
-        {loading ? "Generating..." : "Generate"}
-      </Button>
+        <Button onClick={createLink} disabled={loading} className="w-full">
+          {loading ? "Generating..." : "Generate Short Link"}
+        </Button>
+      </div>
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
 
       {shortLink && (
-        <div className="p-4 border rounded bg-muted space-y-2">
-          <p className="text-sm text-gray-500">Short Link</p>
+        <div className="border rounded-lg p-4 space-y-2 bg-gray-50">
+          <p className="text-sm text-gray-500">Your short link</p>
 
-          <a
-            href={shortLink}
-            target="_blank"
-            className="text-blue-600 font-medium"
-          >
-            {shortLink}
-          </a>
+          <div className="flex justify-between items-center">
+            <a
+              href={shortLink}
+              target="_blank"
+              className="font-mono text-blue-600"
+            >
+              {shortLink}
+            </a>
 
-          <button
-            className="text-xs text-gray-500 underline"
-            onClick={() => navigator.clipboard.writeText(shortLink)}
-          >
-            Copy link
-          </button>
+            <button
+              className="text-sm text-blue-600"
+              onClick={() => navigator.clipboard.writeText(shortLink)}
+            >
+              Copy
+            </button>
+          </div>
         </div>
       )}
     </div>

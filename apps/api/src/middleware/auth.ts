@@ -1,10 +1,10 @@
 import { verifyToken } from "@clerk/backend";
 
-export async function verifyClerkToken(request: Request, secretKey: string) {
-  const authHeader = request.headers.get("Authorization");
+export async function verifyClerkToken(req: Request, secretKey: string) {
+  const authHeader = req.headers.get("Authorization");
 
   if (!authHeader) {
-    throw new Error("Missing Authorization header");
+    throw new Response("Unauthorized", { status: 401 });
   }
 
   const token = authHeader.replace("Bearer ", "");
