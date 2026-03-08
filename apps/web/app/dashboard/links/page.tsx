@@ -6,6 +6,13 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
+import { QRCodeSVG } from "qrcode.react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import {
   Table,
@@ -17,18 +24,20 @@ import {
 } from "@/components/ui/table";
 
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type LinkType = {
   id: string;
   short_code: string;
   original_url: string;
+  clicks: number;
 };
 
 export default function LinksPage() {
   const { getToken } = useAuth();
 
   const [links, setLinks] = useState<LinkType[]>([]);
-  const [copied, setCopied] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadLinks() {
@@ -41,7 +50,9 @@ export default function LinksPage() {
       });
 
       const data = await res.json();
-      setLinks(data.links);
+
+      setLinks(data.links || []);
+      setLoading(false);
     }
 
     loadLinks();
@@ -53,6 +64,16 @@ export default function LinksPage() {
     navigator.clipboard.writeText(url);
 
     toast.success("Link copied to clipboard");
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    );
   }
 
   return (
@@ -81,6 +102,7 @@ export default function LinksPage() {
             <TableRow>
               <TableHead>Short URL</TableHead>
               <TableHead>Original URL</TableHead>
+              <TableHead>Clicks</TableHead>
               <TableHead className="w-40">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -88,13 +110,21 @@ export default function LinksPage() {
           <TableBody>
             {links.map((link) => (
               <TableRow key={link.id} className="hover:bg-muted/50">
-                <TableCell className="font-mono">{link.short_code}</TableCell>
+                <TableCell className="font-mono text-blue-600">
+                  {process.env.NEXT_PUBLIC_API_URL}/{link.short_code}
+                </TableCell>
 
                 <TableCell className="text-muted-foreground max-w-md truncate">
                   {link.original_url}
                 </TableCell>
 
-                <TableCell className="flex gap-4">
+                <TableCell>
+                  <span className="text-xs bg-muted px-2 py-1 rounded">
+                    {link.clicks} clicks
+                  </span>
+                </TableCell>
+
+                <TableCell className="flex gap-4 items-center">
                   <button
                     onClick={() => copyLink(link.short_code)}
                     className="flex items-center gap-1 text-sm text-primary hover:underline"
@@ -109,6 +139,24 @@ export default function LinksPage() {
                   >
                     Analytics
                   </Link>
+
+                  <Dialog>
+                    <DialogTrigger className="text-sm text-primary hover:underline">
+                      QR
+                    </DialogTrigger>
+
+                    <DialogContent className="flex flex-col items-center gap-4">
+                      <DialogTitle>QR Code</DialogTitle>
+                      <QRCodeSVG
+                        value={`${process.env.NEXT_PUBLIC_API_URL}/${link.short_code}`}
+                        size={200}
+                      />
+
+                      <p className="text-sm font-mono">
+                        {process.env.NEXT_PUBLIC_API_URL}/{link.short_code}
+                      </p>
+                    </DialogContent>
+                  </Dialog>
                 </TableCell>
               </TableRow>
             ))}

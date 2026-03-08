@@ -13,6 +13,12 @@ export class AnalyticsDO {
   constructor(state: DurableObjectState, env: any) {
     this.state = state;
     this.env = env;
+
+    setInterval(() => {
+      if (this.buffer.length > 0) {
+        this.flush();
+      }
+    }, 5000);
   }
 
   async fetch(request: Request) {

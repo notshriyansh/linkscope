@@ -9,6 +9,9 @@ export default function NewLinkPage() {
   const { getToken } = useAuth();
 
   const [url, setUrl] = useState("");
+  const [alias, setAlias] = useState("");
+  const [expires, setExpires] = useState("");
+
   const [shortLink, setShortLink] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -34,6 +37,8 @@ export default function NewLinkPage() {
         },
         body: JSON.stringify({
           originalUrl: url,
+          customAlias: alias || null,
+          expiresInDays: expires ? Number(expires) : null,
         }),
       });
 
@@ -45,7 +50,6 @@ export default function NewLinkPage() {
 
       setShortLink(data.shortUrl);
     } catch (err: any) {
-      console.error(err);
       setError(err.message);
     }
 
@@ -56,7 +60,7 @@ export default function NewLinkPage() {
     <div className="max-w-xl space-y-6">
       <div>
         <h2 className="text-2xl font-semibold">Create Short Link</h2>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           Generate a new short URL instantly
         </p>
       </div>
@@ -68,6 +72,23 @@ export default function NewLinkPage() {
           onChange={(e) => setUrl(e.target.value)}
         />
 
+        <Input
+          placeholder="Custom alias (optional)"
+          value={alias}
+          onChange={(e) => setAlias(e.target.value)}
+        />
+
+        <select
+          className="border rounded-md p-2 w-full"
+          value={expires}
+          onChange={(e) => setExpires(e.target.value)}
+        >
+          <option value="">Never expire</option>
+          <option value="1">Expire in 1 day</option>
+          <option value="7">Expire in 7 days</option>
+          <option value="30">Expire in 30 days</option>
+        </select>
+
         <Button onClick={createLink} disabled={loading} className="w-full">
           {loading ? "Generating..." : "Generate Short Link"}
         </Button>
@@ -76,8 +97,8 @@ export default function NewLinkPage() {
       {error && <p className="text-red-500 text-sm">{error}</p>}
 
       {shortLink && (
-        <div className="border rounded-lg p-4 space-y-2 bg-gray-50">
-          <p className="text-sm text-gray-500">Your short link</p>
+        <div className="border rounded-lg p-4 space-y-2 bg-muted">
+          <p className="text-sm text-muted-foreground">Your short link</p>
 
           <div className="flex justify-between items-center">
             <a

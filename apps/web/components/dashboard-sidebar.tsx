@@ -18,7 +18,6 @@ const items = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Create Link", href: "/dashboard/new", icon: Plus },
   { name: "My Links", href: "/dashboard/links", icon: Link2 },
-  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
 ];
 
 export function DashboardSidebar() {
@@ -31,7 +30,7 @@ export function DashboardSidebar() {
       className="border-r h-screen bg-sidebar p-3"
     >
       <div className="flex items-center justify-between mb-6">
-        {!collapsed && <h2 className="font-semibold">EdgeLink</h2>}
+        {!collapsed && <h2 className="font-semibold">LinkScope</h2>}
 
         <button
           onClick={() => setCollapsed(!collapsed)}

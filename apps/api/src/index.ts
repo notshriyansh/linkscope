@@ -22,9 +22,12 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.use(
   "*",
   cors({
-    origin: "http://localhost:3000",
+    origin: ["http://localhost:3000", "https://edgelink.vercel.app"],
     allowHeaders: ["Content-Type", "Authorization"],
-    allowMethods: ["POST", "GET", "OPTIONS"],
+    allowMethods: ["GET", "POST", "OPTIONS"],
+    exposeHeaders: ["Content-Length"],
+    maxAge: 600,
+    credentials: false,
   }),
 );
 
@@ -63,18 +66,28 @@ app.post("/links", async (c) => {
   const userId = payload.sub;
 
   const body = await c.req.json();
-  const { originalUrl, expiresInDays } = body;
+  const { originalUrl, expiresInDays, customAlias } = body;
 
   if (!originalUrl) {
     return c.json({ error: "Missing URL" }, 400);
   }
 
-  const shortCode = generateShortCode();
+  const shortCode = customAlias || generateShortCode();
 
   const now = Date.now();
   const expiresAt = expiresInDays
     ? now + expiresInDays * 24 * 60 * 60 * 1000
     : null;
+
+  const existing = await c.env.DB.prepare(
+    `SELECT id FROM links WHERE short_code = ?`,
+  )
+    .bind(shortCode)
+    .first();
+
+  if (existing) {
+    return c.json({ error: "Alias already exists" }, 400);
+  }
 
   await c.env.DB.prepare(
     `
@@ -85,9 +98,11 @@ app.post("/links", async (c) => {
     .bind(crypto.randomUUID(), userId, shortCode, originalUrl, expiresAt, now)
     .run();
 
+  const baseUrl = new URL(c.req.url).origin;
+
   return c.json({
     shortCode,
-    shortUrl: `http://localhost:8787/${shortCode}`,
+    shortUrl: `${baseUrl}/${shortCode}`,
   });
 });
 
@@ -97,10 +112,17 @@ app.get("/links", async (c) => {
 
   const result = await c.env.DB.prepare(
     `
-    SELECT id, short_code, original_url, created_at
+    SELECT 
+      links.id,
+      links.short_code,
+      links.original_url,
+      COUNT(clicks.id) as clicks
     FROM links
-    WHERE user_id = ?
-    ORDER BY created_at DESC
+    LEFT JOIN clicks 
+      ON links.id = clicks.link_id
+    WHERE links.user_id = ?
+    GROUP BY links.id
+    ORDER BY links.created_at DESC
   `,
   )
     .bind(userId)
@@ -129,6 +151,83 @@ app.get("/analytics/:linkId", async (c) => {
 
   return c.json({
     clicks: result.results,
+  });
+});
+
+app.get("/stats", async (c) => {
+  const payload = await verifyClerkToken(c.req.raw, c.env.CLERK_SECRET_KEY);
+  const userId = payload.sub;
+
+  const totalLinks = await c.env.DB.prepare(
+    `SELECT COUNT(*) as count FROM links WHERE user_id = ?`,
+  )
+    .bind(userId)
+    .first();
+
+  const totalClicks = await c.env.DB.prepare(
+    `
+    SELECT COUNT(clicks.id) as count
+    FROM clicks
+    JOIN links ON clicks.link_id = links.id
+    WHERE links.user_id = ?
+    `,
+  )
+    .bind(userId)
+    .first();
+
+  const today = new Date().setHours(0, 0, 0, 0);
+
+  const clicksToday = await c.env.DB.prepare(
+    `
+    SELECT COUNT(clicks.id) as count
+    FROM clicks
+    JOIN links ON clicks.link_id = links.id
+    WHERE links.user_id = ? AND clicks.created_at > ?
+    `,
+  )
+    .bind(userId, today)
+    .first();
+
+  return c.json({
+    totalLinks: totalLinks?.count || 0,
+    totalClicks: totalClicks?.count || 0,
+    clicksToday: clicksToday?.count || 0,
+  });
+});
+
+app.get("/analytics/live/:linkId", async (c) => {
+  const linkId = c.req.param("linkId");
+
+  let interval: any;
+
+  const stream = new ReadableStream({
+    start(controller) {
+      interval = setInterval(async () => {
+        const result = await c.env.DB.prepare(
+          `SELECT COUNT(*) as count FROM clicks WHERE link_id = ?`,
+        )
+          .bind(linkId)
+          .first();
+
+        const data = JSON.stringify({
+          clicks: result?.count || 0,
+        });
+
+        controller.enqueue(`data: ${data}\n\n`);
+      }, 2000);
+    },
+
+    cancel() {
+      clearInterval(interval);
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
   });
 });
 
@@ -172,30 +271,6 @@ app.get("/:shortCode", async (c) => {
   });
 
   return c.redirect(link.original_url, 302);
-});
-
-app.get("/stats", async (c) => {
-  const totalLinks = await c.env.DB.prepare(
-    `SELECT COUNT(*) as count FROM links`,
-  ).first();
-
-  const totalClicks = await c.env.DB.prepare(
-    `SELECT COUNT(*) as count FROM clicks`,
-  ).first();
-
-  const today = new Date().setHours(0, 0, 0, 0);
-
-  const clicksToday = await c.env.DB.prepare(
-    `SELECT COUNT(*) as count FROM clicks WHERE created_at > ?`,
-  )
-    .bind(today)
-    .first();
-
-  return c.json({
-    totalLinks: totalLinks?.count || 0,
-    totalClicks: totalClicks?.count || 0,
-    clicksToday: clicksToday?.count || 0,
-  });
 });
 
 export default app;

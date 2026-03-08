@@ -14,11 +14,7 @@ type Stats = {
 
 export default function DashboardPage() {
   const { getToken } = useAuth();
-  const [stats, setStats] = useState<Stats>({
-    totalLinks: 0,
-    totalClicks: 0,
-    clicksToday: 0,
-  });
+  const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
     async function loadStats() {
