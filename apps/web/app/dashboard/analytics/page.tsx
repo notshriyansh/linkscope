@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type LinkType = {
   id: string;
@@ -11,25 +12,23 @@ type LinkType = {
   clicks: number;
 };
 
-export default function AnalyticsOverview() {
+export default function AnalyticsOverviewPage() {
   const { getToken } = useAuth();
   const [links, setLinks] = useState<LinkType[]>([]);
 
   useEffect(() => {
-    async function loadLinks() {
+    async function load() {
       const token = await getToken({ template: "edge" });
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/links`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const data = await res.json();
       setLinks(data.links || []);
     }
 
-    loadLinks();
+    load();
   }, []);
 
   return (
@@ -37,43 +36,39 @@ export default function AnalyticsOverview() {
       <div>
         <h1 className="text-2xl font-semibold">Analytics</h1>
         <p className="text-sm text-muted-foreground">
-          Overview of link performance
+          Performance overview for all your links
         </p>
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted">
-            <tr>
-              <th className="text-left p-3">Short Link</th>
-              <th className="text-left p-3">Clicks</th>
-              <th className="text-left p-3"></th>
-            </tr>
-          </thead>
+      <Card>
+        <CardHeader>
+          <CardTitle>Link Performance</CardTitle>
+        </CardHeader>
 
-          <tbody>
-            {links.map((link) => (
-              <tr
-                key={link.id}
-                className="border-t hover:bg-muted/50 transition"
-              >
-                <td className="p-3 font-mono">{link.short_code}</td>
+        <CardContent className="space-y-2">
+          {links.map((link) => (
+            <Link
+              key={link.id}
+              href={`/dashboard/analytics/${link.id}`}
+              className="flex items-center justify-between p-4 rounded-lg hover:bg-secondary transition"
+            >
+              <div>
+                <p className="font-medium">
+                  {process.env.NEXT_PUBLIC_API_URL}/{link.short_code}
+                </p>
+                <p className="text-sm text-muted-foreground truncate max-w-md">
+                  {link.original_url}
+                </p>
+              </div>
 
-                <td className="p-3">{link.clicks}</td>
-
-                <td className="p-3">
-                  <Link
-                    href={`/dashboard/analytics/${link.id}`}
-                    className="text-primary hover:underline"
-                  >
-                    View Analytics →
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              <div className="text-right">
+                <p className="font-medium">{link.clicks}</p>
+                <p className="text-xs text-muted-foreground">Clicks</p>
+              </div>
+            </Link>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }

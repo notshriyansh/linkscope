@@ -15,6 +15,8 @@ import {
   Bar,
 } from "recharts";
 
+import GeoMap from "@/components/geomap";
+
 type Click = {
   country: string;
   device: string;
@@ -24,7 +26,6 @@ type Click = {
 export default function AnalyticsPage() {
   const { getToken } = useAuth();
   const params = useParams();
-
   const linkId = params.linkId as string;
 
   const [clicks, setClicks] = useState<Click[]>([]);
@@ -102,17 +103,15 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Analytics</h1>
-        <p className="text-sm text-muted-foreground flex items-center gap-2">
-          Live clicks:
-          <span className="font-semibold text-primary animate-pulse">
-            {liveClicks}
-          </span>
+        <h1 className="text-3xl font-semibold">Analytics</h1>
+        <p className="text-sm text-muted-foreground">
+          Live clicks:{" "}
+          <span className="font-semibold text-primary">{liveClicks}</span>
         </p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <div className="border rounded-lg p-6">
+        <div className="border rounded-xl p-6 bg-card">
           <h2 className="font-semibold mb-4">Clicks Over Time</h2>
 
           <div className="h-64">
@@ -127,7 +126,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        <div className="border rounded-lg p-6">
+        <div className="border rounded-xl p-6 bg-card">
           <h2 className="font-semibold mb-4">Clicks by Device</h2>
 
           <div className="h-64">
@@ -142,18 +141,11 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        <div className="border rounded-lg p-6 lg:col-span-2">
-          <h2 className="font-semibold mb-4">Clicks by Country</h2>
+        <div className="border rounded-xl p-6 lg:col-span-2 bg-card">
+          <h2 className="font-semibold mb-4">Geographic Distribution</h2>
 
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={countryStats}>
-                <XAxis dataKey="country" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="clicks" fill="#6366f1" />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-80">
+            <GeoMap data={countryStats as any} />
           </div>
         </div>
       </div>

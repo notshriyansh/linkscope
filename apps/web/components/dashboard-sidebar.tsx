@@ -58,7 +58,9 @@ export function DashboardSidebar() {
               key={item.name}
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-150 ${
-                active ? "bg-accent font-medium" : "hover:bg-accent/70"
+                active
+                  ? "bg-sidebar-accent text-sidebar-foreground"
+                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
               }`}
             >
               <Icon

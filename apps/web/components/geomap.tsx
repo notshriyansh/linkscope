@@ -4,15 +4,10 @@ import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
-type CountryStat = {
-  country: string;
-  clicks: number;
-};
-
-export default function GeoMap({ data }: { data: CountryStat[] }) {
+export default function GeoMap({ data }: any) {
   const clicksMap: Record<string, number> = {};
 
-  data.forEach((c) => {
+  data.forEach((c: any) => {
     clicksMap[c.country] = c.clicks;
   });
 
@@ -26,10 +21,13 @@ export default function GeoMap({ data }: { data: CountryStat[] }) {
   };
 
   return (
-    <ComposableMap projectionConfig={{ scale: 150 }}>
+    <ComposableMap
+      projectionConfig={{ scale: 140 }}
+      style={{ width: "100%", height: "100%" }}
+    >
       <Geographies geography={geoUrl}>
-        {({ geographies }: { geographies: any[] }) =>
-          geographies.map((geo) => {
+        {({ geographies }) =>
+          geographies.map((geo: any) => {
             const code = geo.properties.ISO_A2;
 
             return (
@@ -41,7 +39,10 @@ export default function GeoMap({ data }: { data: CountryStat[] }) {
                 strokeWidth={0.5}
                 style={{
                   default: { outline: "none" },
-                  hover: { fill: "#6366f1", outline: "none" },
+                  hover: {
+                    fill: "#4f46e5",
+                    outline: "none",
+                  },
                 }}
               />
             );
